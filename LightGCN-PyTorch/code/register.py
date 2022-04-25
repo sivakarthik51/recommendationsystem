@@ -11,7 +11,7 @@ elif world.dataset == 'lastfm':
 elif world.dataset == 'goodreads':
     dataset = dataloader.GoodReads(path="../data/", train_ratio=0.75)
 elif world.dataset == 'movielens':
-    dataset = dataloader.MovieLens(path="../data/", train_ratio=0.90)
+    dataset = dataloader.MovieLens()
 
 print('===========config================')
 pprint(world.config)
