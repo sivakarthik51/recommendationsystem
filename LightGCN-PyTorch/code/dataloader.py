@@ -239,7 +239,7 @@ class GoodReads(BasicDataset):
             dict: {user: [items]}
         """
         test_data = {}
-        for i, item in enumerate(self.testBook):
+        for i, item in enumerate(self.testItem):
             user = self.testUser[i]
             if test_data.get(user):
                 test_data[user].append(item)

@@ -2,14 +2,17 @@ import numpy as np
 import pandas as pd
 import os
 
-PATH = "../data/"
-DATA_FILE = "movielens.csv"
-cols_to_use = ['user', 'movie']
-df = pd.read_csv(os.path.join(PATH, DATA_FILE), usecols=cols_to_use)
+PATH = "../data/goodreads/"
+DATA_FILE = "ratings.csv"
+cols_to_use = ['user_id', 'book_id']
+#cols_to_use = ['user','movie']
 
+
+df = pd.read_csv(os.path.join(PATH, DATA_FILE), usecols=cols_to_use)
+print(f"len of entire df = {len(df)}")
 train_df, test_df = pd.DataFrame(), pd.DataFrame()
 train_ratio = 0.9
-for k, g in df.groupby('user'):
+for k, g in df.groupby(cols_to_use[0]):
     num_items = len(g)
     items = g.sample(frac=1)
     train_items = int(train_ratio*num_items)
@@ -19,7 +22,7 @@ for k, g in df.groupby('user'):
 train_df.reset_index(inplace=True, drop=True)
 test_df.reset_index(inplace=True, drop=True)
 
-assert((df.sort_values(by=['user', 'movie']).reset_index(drop=True) == pd.concat([train_df, test_df]).sort_values(by=['user', 'movie']).reset_index(drop=True)).all().all())
+assert((df.sort_values(by=cols_to_use).reset_index(drop=True) == pd.concat([train_df, test_df]).sort_values(by=cols_to_use).reset_index(drop=True)).all().all())
 
 train_df.to_csv(os.path.join(PATH, os.path.splitext(DATA_FILE)[0]+"_train.csv"))
 test_df.to_csv(os.path.join(PATH, os.path.splitext(DATA_FILE)[0]+"_test.csv"))

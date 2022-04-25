@@ -9,7 +9,7 @@ if world.dataset in ['gowalla', 'yelp2018', 'amazon-book']:
 elif world.dataset == 'lastfm':
     dataset = dataloader.LastFM()
 elif world.dataset == 'goodreads':
-    dataset = dataloader.GoodReads(path="../data/", train_ratio=0.75)
+    dataset = dataloader.GoodReads(path="../data/"+world.dataset)
 elif world.dataset == 'movielens':
     dataset = dataloader.MovieLens()
 
