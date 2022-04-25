@@ -73,49 +73,50 @@ class BasicDataset(Dataset):
         raise NotImplementedError
 
 class GoodReads(BasicDataset):
-    def __init__(self, path, config=world.config, train_ratio=0.75):
-        filename = os.path.join(path, "ratings.csv")
-        #n = np.sum(1 for line in open(filename)) - 1 #number of records in file (excludes header)
-        #s = 100 #desired sample size
-        #skip = sorted(np.random.sample(range(1,n+1),n-s))        
-        print("Loading goodreads data", flush=True)
-        df = pd.read_csv(filename, usecols=['user_id', 'book_id']) #, dtype={'user_id':np.int32, 'book_id':np.int32})
-        print("read_csv done!", flush=True)
-        print(df.head(), flush=True)
-        self.path = path
+    def __init__(self, path="../data/goodreads/", config=world.config):
+        
+        cprint(f'loading [{path}]')
         self.split = config['A_split']
         self.folds = config['A_n_fold']
-        self.n_user = len(pd.unique(df['user_id']))
-        self.m_item = len(pd.unique(df['book_id']))
+        self.mode_dict = {'train': 0, "test": 1}
+        self.mode = self.mode_dict['train']
+        self.n_user = 0
+        self.m_item = 0
+        train_file = os.path.join(path, 'train.csv')
+        test_file = os.path.join(path, 'test.csv')
+        self.path = path
+        trainUniqueUsers, trainItem, trainUser = [], [], []
+        testUniqueUsers, testItem, testUser = [], [], []
+        self.traindataSize = 0
+        self.testDataSize = 0
+
+        train_df = pd.read_csv(train_file, usecols=['user_id', 'book_id']) #, dtype={'user_id':np.int32, 'book_id':np.int32})
+        test_df = pd.read_csv(test_file, usecols=['user_id', 'book_id']) #, dtype={'user_id':np.int32, 'book_id':np.int32})
         
-        train_df, test_df = np.split(df.sample(frac=1), [int(train_ratio*len(df))])
+        self.trainItem = np.array(train_df['book_id'])
+        self.trainUser = np.array(train_df['user_id'])
+        self.testItem = np.array(test_df['book_id'])
+        self.testUser = np.array(test_df['user_id'])
+       
         self.traindataSize = len(train_df)
         self.testDataSize = len(test_df)
-        trainUsers, testUsers = [], []
-        trainBooks, testBooks = [], []
-        def map_to_id(array):
-            values, counts = np.unique(array, return_counts=True)
-            return np.array([i for i in range(len(values)) for j in range(counts[i])])
-        self.trainUser = np.array(train_df.user_id)
-        self.testUser = np.array(test_df.user_id)
-        self.trainBook = np.array(train_df.book_id)
-        self.testBook = np.array(test_df.book_id)
-        self.trainUser, self.testUser, self.trainBook, self.testBook = map_to_id(self.trainUser), map_to_id(self.testUser), map_to_id(self.trainBook), map_to_id(self.testBook)
-        print("size of df =", getsizeof(df), flush=True)
-
-        del df
-        del train_df
-        del test_df
-        gc.collect()
+        self.m_item = max(np.max(self.trainItem), np.max(self.testItem))+1
+        self.n_user = max(np.max(self.trainUser), np.max(self.testUser))+1
+        self.Graph = None
         print(f"{self.trainDataSize} interactions for training", flush=True)
         print(f"{self.testDataSize} interactions for testing", flush=True)
-        print(f"{world.dataset} Sparsity : {(self.trainDataSize + self.testDataSize) / self.n_users / self.m_item}", flush=True)
-        print(f"n_users: {self.n_user}, len(self.trainUser): {len(self.trainUser)}", flush=True)
-        print(f"m_item: {self.m_item}, len(self.trainBook): {len(self.trainBook)}", flush=True)
+        print(f"{world.dataset} Sparsity : {(self.trainDataSize + self.testDataSize) / self.n_users / self.m_items}", flush=True)
+        print(f"n_users: {self.n_user}, len(self.trainUser): {len(self.trainUser)}, max: {np.max(self.trainUser)}", flush=True)
+        print(f"m_items: {self.m_item}, len(self.trainItem): {len(self.trainItem)},max: {np.max(self.trainItem)}", flush=True)
 
-        self.Graph = None
-        
-        self.UserItemNet = csr_matrix((np.ones(len(self.trainUser)), (self.trainUser, self.trainBook)), shape=(self.n_user, self.m_item))
+        # (users,items), bipartite graph
+        self.UserItemNet = csr_matrix((np.ones(len(self.trainUser)), (self.trainUser, self.trainItem)),
+                                      shape=(self.n_user, self.m_item))
+        self.users_D = np.array(self.UserItemNet.sum(axis=1)).squeeze()
+        self.users_D[self.users_D == 0.] = 1
+        self.items_D = np.array(self.UserItemNet.sum(axis=0)).squeeze()
+        self.items_D[self.items_D == 0.] = 1.
+        # pre-calculate
         self._allPos = self.getUserPosItems(list(range(self.n_user)))
         self.__testDict = self.__build_test()
         print(f"{world.dataset} is ready to go", flush=True)
