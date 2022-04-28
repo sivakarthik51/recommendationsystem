@@ -16,7 +16,8 @@ import multiprocessing
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 args = parse_args()
 
-ROOT_PATH = "/home/kritika/Desktop/GeorgiaTech/CSE6240/Project/recommendationsystem/LightGCN-PyTorch/"
+#ROOT_PATH = "/home/kritika/Desktop/GeorgiaTech/CSE6240/Project/recommendationsystem/LightGCN-PyTorch/"
+ROOT_PATH = os.path.normpath(os.getcwd() + os.sep + os.pardir)
 CODE_PATH = join(ROOT_PATH, 'code')
 DATA_PATH = join(ROOT_PATH, 'data')
 BOARD_PATH = join(CODE_PATH, 'runs')
